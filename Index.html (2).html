@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoImport — Comparateur</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
+
+:root {
+  --bg:       #f5f5f7;
+  --bg2:      #ffffff;
+  --bg3:      #f0f0f2;
+  --surface:  #ffffff;
+  --border:   rgba(0,0,0,0.08);
+  --border2:  rgba(0,0,0,0.14);
+  --text:     #1d1d1f;
+  --text2:    #6e6e73;
+  --text3:    #aeaeb2;
+  --blue:     #0071e3;
+  --blue2:    #0077ed;
+  --green:    #34c759;
+  --red:      #ff3b30;
+  --amber:    #ff9f0a;
+  --karaba:   #5e5ce6;
+  --encar:    #ff2d55;
+  --lbc:      #ff6b00;
+  --radius:   14px;
+  --radius-sm:9px;
+  --shadow:   0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; min-height: 100vh; }
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 52px;
+  display: flex; align-items: center; gap: 20px;
+}
+.logo { display: flex; align-items: center; gap: 9px; }
+.logo-mark {
+  width: 28px; height: 28px;
+  background: var(--text);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.logo-name sub { font-size: 10px; font-weight: 400; color: var(--text2); display: block; letter-spacing: 0; line-height: 1; }
+
+.nav-pills { display: flex; gap: 2px; background: var(--bg3); border-radius: 10px; padding: 3px; margin-left: 20px; }
+.nav-pill { padding: 5px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all .2s; border: none; background: none; font-family: 'Inter', sans-serif; }
+.nav-pill.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+
+.rate-pill {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg3); border-radius: 20px; padding: 5px 12px;
+  font-size: 12px; color: var(--text2);
+}
+.rate-green { color: #1c7d36; font-weight: 600; font-size: 12px; letter-spacing: -0.2px; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.refresh-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 12px; padding: 0; margin-left: 2px; transition: color .15s; }
+.refresh-btn:hover { color: var(--text2); }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: calc(100vh - 52px); }
+.sidebar {
+  width: 264px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  position: sticky; top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  padding: 20px 16px;
+}
+.sidebar::-webkit-scrollbar { width: 0; }
+.main { flex: 1; padding: 24px; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sb-group { margin-bottom: 24px; }
+.sb-group-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; padding-left: 4px; }
+
+.filter-field { margin-bottom: 8px; }
+.filter-field label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; padding-left: 4px; }
+.filter-field input, .filter-field select {
+  width: 100%; background: var(--bg3); border: 1.5px solid transparent;
+  border-radius: var(--radius-sm); padding: 8px 11px; color: var(--text);
+  font-size: 13px; font-family: 'Inter', sans-serif; outline: none;
+  transition: border-color .15s, background .15s;
+}
+.filter-field input:focus, .filter-field select:focus {
+  background: var(--surface); border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(0,113,227,0.12);
+}
+.filter-row { display: flex; gap: 6px; }
+.filter-row .filter-field { flex: 1; }
+
+/* Frais items */
+.frais-list { display: flex; flex-direction: column; gap: 6px; }
+.frais-row-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg3); border-radius: var(--radius-sm);
+  padding: 8px 11px;
+}
+.frais-row-item label { font-size: 12px; color: var(--text2); }
+.frais-row-item input {
+  width: 80px; text-align: right; background: transparent; border: none;
+  font-size: 13px; font-weight: 500; color: var(--text); font-family: 'Inter', sans-serif;
+  outline: none; font-variant-numeric: tabular-nums;
+}
+
+.divider { height: 1px; background: var(--border); margin: 4px 0 16px; }
+
+.cta-btn {
+  width: 100%; padding: 10px; border-radius: var(--radius-sm);
+  background: var(--blue); color: #fff;
+  border: none; font-size: 14px; font-weight: 600;
+  font-family: 'Inter', sans-serif; cursor: pointer;
+  transition: all .15s; letter-spacing: -0.2px;
+}
+.cta-btn:hover { background: var(--blue2); transform: scale(0.99); }
+.cta-btn:active { transform: scale(0.97); }
+.ghost-btn {
+  width: 100%; padding: 9px; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text2);
+  border: 1.5px solid var(--border2); font-size: 13px; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; margin-top: 8px;
+  transition: all .15s;
+}
+.ghost-btn:hover { border-color: var(--text3); color: var(--text); }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── SAISIE ── */
+.sources-grid { display: grid; grid-template-columns: 1fr; gap: 14px; max-width: 760px; }
+
+.source-card {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  padding: 20px; transition: box-shadow .2s;
+}
+.source-card:hover { box-shadow: var(--shadow); }
+
+.sc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.src-pill {
+  font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  border-radius: 6px; padding: 3px 9px;
+}
+.src-pill.karaba { background: rgba(94,92,230,.1); color: var(--karaba); }
+.src-pill.encar  { background: rgba(255,45,85,.1);  color: var(--encar); }
+.src-pill.lbc    { background: rgba(255,107,0,.1);  color: var(--lbc); }
+.sc-desc { font-size: 12px; color: var(--text3); }
+.sc-actions { margin-left: auto; display: flex; gap: 6px; }
+.sm-btn {
+  padding: 5px 11px; border-radius: 7px; border: 1.5px solid var(--border2);
+  background: transparent; color: var(--text2); font-size: 12px; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: all .15s;
+}
+.sm-btn:hover { color: var(--text); border-color: var(--text3); }
+.sm-btn.filled { background: var(--text); color: #fff; border-color: var(--text); }
+.sm-btn.filled:hover { opacity: .85; }
+
+.paste-box {
+  width: 100%; min-height: 90px; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 14px; color: var(--text); font-size: 13px;
+  font-family: 'Inter', sans-serif; resize: vertical; outline: none;
+  transition: border-color .15s, background .15s;
+  line-height: 1.6;
+}
+.paste-box:focus { background: var(--surface); border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,113,227,.1); }
+.paste-box::placeholder { color: var(--text3); font-size: 12.5px; line-height: 1.7; }
+
+.manual-form { display: none; margin-top: 12px; }
+.manual-form.open { display: block; }
+.manual-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+.mg-field label { font-size: 11px; color: var(--text3); display: block; margin-bottom: 3px; }
+.mg-field input, .mg-field select {
+  width: 100%; background: var(--bg3); border: 1.5px solid transparent;
+  border-radius: 8px; padding: 7px 10px; color: var(--text); font-size: 13px;
+  font-family: 'Inter', sans-serif; outline: none; transition: all .15s;
+}
+.mg-field input:focus, .mg-field select:focus { background: #fff; border-color: var(--blue); }
+.add-listing-btn {
+  padding: 8px 16px; background: var(--blue); color: #fff; border: none;
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  font-family: 'Inter', sans-serif; cursor: pointer; white-space: nowrap;
+  transition: all .15s; height: 36px;
+}
+.add-listing-btn:hover { background: var(--blue2); }
+.add-listing-btn:active { transform: scale(.97); }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: flex; gap: 0; margin-bottom: 20px;
+  background: var(--surface); border-radius: var(--radius);
+  border: 1.5px solid var(--border); overflow: hidden;
+}
+.stat-item { flex: 1; padding: 14px 18px; border-right: 1px solid var(--border); }
+.stat-item:last-child { border-right: none; }
+.stat-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+.stat-lbl { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.stat-val.green { color: #1c7d36; }
+.stat-val.blue  { color: var(--blue); }
+.stat-val.amber { color: #b25000; }
+
+/* ── TOOLBAR ── */
+.comp-toolbar {
+  display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
+}
+.search-wrap { position: relative; flex: 1; max-width: 260px; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text3); }
+.search-input {
+  width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 7px 11px 7px 30px;
+  color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; outline: none;
+  transition: all .15s;
+}
+.search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,113,227,.1); }
+.filter-seg { display: flex; gap: 2px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 3px; }
+.seg-btn {
+  padding: 5px 12px; border-radius: 7px; border: none; background: none;
+  font-size: 12px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: all .18s; font-family: 'Inter', sans-serif;
+}
+.seg-btn.active { background: var(--text); color: #fff; }
+.sort-select {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 7px 11px; color: var(--text); font-size: 13px;
+  font-family: 'Inter', sans-serif; outline: none; cursor: pointer;
+}
+
+/* ── CAR CARDS ── */
+.car-grid { display: flex; flex-direction: column; gap: 10px; }
+
+.car-card {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  padding: 18px 20px;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+}
+.car-card:hover { box-shadow: var(--shadow); border-color: var(--border2); }
+.car-card::after {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--src-color);
+  border-radius: 3px 0 0 3px;
+}
+.car-card.karaba { --src-color: var(--karaba); }
+.car-card.encar  { --src-color: var(--encar); }
+.car-card.lbc    { --src-color: var(--lbc); }
+
+.card-main { display: flex; align-items: center; gap: 16px; }
+.card-left { flex: 1; min-width: 0; }
+.card-model { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+.meta-chip {
+  font-size: 12px; color: var(--text2);
+  background: var(--bg); border-radius: 6px;
+  padding: 2px 8px; display: flex; align-items: center; gap: 4px;
+}
+.card-right { text-align: right; flex-shrink: 0; }
+.price-net { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+.price-hint { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.price-brut-tag { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+.rank-num {
+  position: absolute; top: 16px; right: 18px;
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.rank-1 { background: rgba(52,199,89,.15); color: #1c7d36; }
+.rank-2 { background: rgba(0,113,227,.12); color: var(--blue); }
+.rank-3 { background: rgba(255,159,10,.15); color: #b25000; }
+
+.card-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.detail-toggle { background: none; border: none; font-size: 12px; color: var(--blue); cursor: pointer; font-family: 'Inter', sans-serif; padding: 0; font-weight: 500; }
+.remove-btn { margin-left: auto; background: none; border: none; font-size: 12px; color: var(--text3); cursor: pointer; font-family: 'Inter', sans-serif; padding: 0; transition: color .15s; }
+.remove-btn:hover { color: var(--red); }
+
+.breakdown {
+  display: none; margin-top: 12px;
+  background: var(--bg); border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.breakdown.open { display: block; }
+.bd-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); padding: 3px 0; }
+.bd-row.bd-total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 6px; color: var(--text); font-weight: 600; font-size: 13px; }
+
+/* ── EMPTY ── */
+.empty { text-align: center; padding: 80px 20px; color: var(--text3); }
+.empty-icon { font-size: 48px; margin-bottom: 14px; opacity: .4; }
+.empty-title { font-size: 17px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: #fff; border-radius: 20px;
+  padding: 9px 18px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all .3s; pointer-events: none; z-index: 999;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">🚗</div>
+    <div class="logo-name">AutoImport<sub>Comparateur</sub></div>
+  </div>
+  <div class="nav-pills">
+    <button class="nav-pill active" id="pill-saisie" onclick="showScreen('saisie')">Annonces</button>
+    <button class="nav-pill" id="pill-comp" onclick="showScreen('comp')">Comparatif <span id="count-badge" style="font-size:10px;background:rgba(0,0,0,0.08);border-radius:8px;padding:1px 6px;margin-left:2px">0</span></button>
+  </div>
+  <div class="rate-pill">
+    <span class="live-dot"></span>
+    <span>1 KRW</span>
+    <strong class="rate-green" id="rate-val">…</strong>
+    <span>EUR</span>
+    <button class="refresh-btn" onclick="fetchRate()" title="Actualiser">↻</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="sb-group">
+      <div class="sb-group-title">Filtres</div>
+      <div class="filter-field">
+        <label>Modèle / marque</label>
+        <input type="text" id="f-model" placeholder="Genesis G80, Kia K9…" oninput="renderComp()">
+      </div>
+      <div class="filter-row">
+        <div class="filter-field">
+          <label>Année min</label>
+          <input type="number" id="f-ymin" placeholder="2018" oninput="renderComp()">
+        </div>
+        <div class="filter-field">
+          <label>Année max</label>
+          <input type="number" id="f-ymax" placeholder="2024" oninput="renderComp()">
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-field">
+          <label>Km min</label>
+          <input type="number" id="f-kmin" placeholder="0" oninput="renderComp()">
+        </div>
+        <div class="filter-field">
+          <label>Km max</label>
+          <input type="number" id="f-kmax" placeholder="150 000" oninput="renderComp()">
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sb-group">
+      <div class="sb-group-title">Frais import Corée</div>
+      <div class="frais-list">
+        <div class="frais-row-item"><label>Transport</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="fr-transport" value="1800" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">€</span></div></div>
+        <div class="frais-row-item"><label>Droits de douane</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="fr-douane" value="6.5" step="0.1" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">%</span></div></div>
+        <div class="frais-row-item"><label>TVA</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="fr-tva" value="20" step="0.1" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">%</span></div></div>
+        <div class="frais-row-item"><label>Homologation</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="fr-homolog" value="600" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">€</span></div></div>
+        <div class="frais-row-item"><label>Malus écologique</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="fr-malus" value="0" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">€</span></div></div>
+        <div class="frais-row-item"><label>Carte grise</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="fr-cg" value="400" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">€</span></div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sb-group">
+      <div class="sb-group-title">Frais France (LBC)</div>
+      <div class="frais-list">
+        <div class="frais-row-item"><label>Carte grise</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="lbc-cg" value="300" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">€</span></div></div>
+        <div class="frais-row-item"><label>Malus écologique</label><div style="display:flex;align-items:center;gap:4px"><input type="number" id="lbc-malus" value="0" oninput="renderComp()"><span style="font-size:11px;color:var(--text3)">€</span></div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <button class="cta-btn" onclick="showScreen('comp')">Voir le comparatif →</button>
+    <button class="ghost-btn" onclick="clearAll()">Effacer toutes les annonces</button>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- SAISIE -->
+    <div class="screen active" id="screen-saisie">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:22px;font-weight:700;letter-spacing:-0.4px">Ajouter des annonces</h2>
+        <p style="font-size:13px;color:var(--text2);margin-top:4px">Colle le texte copié depuis chaque site, ou remplis le formulaire manuellement.</p>
+      </div>
+      <div class="sources-grid">
+
+        <!-- KARABA -->
+        <div class="source-card">
+          <div class="sc-header">
+            <span class="src-pill karaba">KARABA</span>
+            <span class="sc-desc">karaba.com · prix en KRW ₩</span>
+            <div class="sc-actions">
+              <button class="sm-btn" onclick="toggleManual('karaba')">+ Manuel</button>
+              <button class="sm-btn filled" onclick="parsePaste('karaba')">Importer ↑</button>
+            </div>
+          </div>
+          <textarea class="paste-box" id="paste-karaba" placeholder="Colle ici le texte copié depuis Karaba&#10;&#10;Exemple : Genesis G80 3.5T AWD 2022 45,000km 45,000,000원&#10;&#10;Le parser extrait automatiquement : modèle · année · km · prix KRW" rows="4"></textarea>
+          <div class="manual-form" id="manual-karaba">
+            <div class="manual-grid">
+              <div class="mg-field"><label>Modèle</label><input type="text" id="k-model" placeholder="Genesis G80"></div>
+              <div class="mg-field"><label>Année</label><input type="number" id="k-year" placeholder="2022"></div>
+              <div class="mg-field"><label>Kilométrage</label><input type="number" id="k-km" placeholder="45000"></div>
+              <div class="mg-field"><label>Prix KRW (₩)</label><input type="number" id="k-price" placeholder="45000000"></div>
+              <div class="mg-field"><label>Carburant</label><select id="k-fuel"><option>Essence</option><option>Diesel</option><option>Hybride</option><option>Électrique</option><option>LPG</option></select></div>
+              <button class="add-listing-btn" onclick="addManual('karaba')">Ajouter</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENCAR -->
+        <div class="source-card">
+          <div class="sc-header">
+            <span class="src-pill encar">ENCAR</span>
+            <span class="sc-desc">encar.com · prix en KRW ₩</span>
+            <div class="sc-actions">
+              <button class="sm-btn" onclick="toggleManual('encar')">+ Manuel</button>
+              <button class="sm-btn filled" onclick="parsePaste('encar')">Importer ↑</button>
+            </div>
+          </div>
+          <textarea class="paste-box" id="paste-encar" placeholder="Colle ici le texte copié depuis Encar&#10;&#10;Exemple : Kia K9 3.3 T-GDI 2021 60,000km 32,000,000원&#10;&#10;Le parser extrait automatiquement : modèle · année · km · prix KRW" rows="4"></textarea>
+          <div class="manual-form" id="manual-encar">
+            <div class="manual-grid">
+              <div class="mg-field"><label>Modèle</label><input type="text" id="e-model" placeholder="Kia K9"></div>
+              <div class="mg-field"><label>Année</label><input type="number" id="e-year" placeholder="2021"></div>
+              <div class="mg-field"><label>Kilométrage</label><input type="number" id="e-km" placeholder="60000"></div>
+              <div class="mg-field"><label>Prix KRW (₩)</label><input type="number" id="e-price" placeholder="32000000"></div>
+              <div class="mg-field"><label>Carburant</label><select id="e-fuel"><option>Essence</option><option>Diesel</option><option>Hybride</option><option>Électrique</option><option>LPG</option></select></div>
+              <button class="add-listing-btn" onclick="addManual('encar')">Ajouter</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LBC -->
+        <div class="source-card">
+          <div class="sc-header">
+            <span class="src-pill lbc">LEBONCOIN</span>
+            <span class="sc-desc">leboncoin.fr · prix en EUR €</span>
+            <div class="sc-actions">
+              <button class="sm-btn" onclick="toggleManual('lbc')">+ Manuel</button>
+              <button class="sm-btn filled" onclick="parsePaste('lbc')">Importer ↑</button>
+            </div>
+          </div>
+          <textarea class="paste-box" id="paste-lbc" placeholder="Colle ici le texte copié depuis LeBonCoin&#10;&#10;Exemple : Genesis G80 3.5T 2022 55 000 km 38 500 €&#10;&#10;Le parser extrait automatiquement : modèle · année · km · prix EUR" rows="4"></textarea>
+          <div class="manual-form" id="manual-lbc">
+            <div class="manual-grid">
+              <div class="mg-field"><label>Modèle</label><input type="text" id="l-model" placeholder="Genesis G80"></div>
+              <div class="mg-field"><label>Année</label><input type="number" id="l-year" placeholder="2022"></div>
+              <div class="mg-field"><label>Kilométrage</label><input type="number" id="l-km" placeholder="55000"></div>
+              <div class="mg-field"><label>Prix EUR (€)</label><input type="number" id="l-price" placeholder="38500"></div>
+              <div class="mg-field"><label>Carburant</label><select id="l-fuel"><option>Essence</option><option>Diesel</option><option>Hybride</option><option>Électrique</option><option>LPG</option></select></div>
+              <button class="add-listing-btn" onclick="addManual('lbc')">Ajouter</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- COMPARATIF -->
+    <div class="screen" id="screen-comp">
+      <div id="stats-bar-wrap"></div>
+      <div class="comp-toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" type="text" id="search" placeholder="Rechercher…" oninput="renderComp()">
+        </div>
+        <div class="filter-seg">
+          <button class="seg-btn active" id="seg-all"     onclick="setSrc('all')">Tous</button>
+          <button class="seg-btn"        id="seg-karaba"  onclick="setSrc('karaba')">Karaba</button>
+          <button class="seg-btn"        id="seg-encar"   onclick="setSrc('encar')">Encar</button>
+          <button class="seg-btn"        id="seg-lbc"     onclick="setSrc('lbc')">LeBonCoin</button>
+        </div>
+        <select class="sort-select" id="sort-by" onchange="renderComp()">
+          <option value="net">Prix net ↑</option>
+          <option value="brut">Prix brut ↑</option>
+          <option value="km">Kilométrage ↑</option>
+          <option value="year">Année récente ↓</option>
+        </select>
+      </div>
+      <div class="car-grid" id="results"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let listings = [], krwRate = 0.00068, srcFilter = 'all', uid = 0;
+
+// ══════════════════════════════════════
+// RATE
+// ══════════════════════════════════════
+async function fetchRate() {
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=KRW&to=EUR');
+    const d = await r.json();
+    krwRate = d.rates.EUR;
+    document.getElementById('rate-val').textContent = krwRate.toFixed(6);
+    renderComp();
+  } catch {
+    document.getElementById('rate-val').textContent = krwRate.toFixed(6);
+  }
+}
+fetchRate();
+
+// ══════════════════════════════════════
+// NAV
+// ══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('pill-'+id).classList.add('active');
+  if(id === 'comp') renderComp();
+}
+
+function setSrc(s) {
+  srcFilter = s;
+  document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('seg-'+s).classList.add('active');
+  renderComp();
+}
+
+function toggleManual(src) {
+  document.getElementById('manual-'+src).classList.toggle('open');
+}
+
+// ══════════════════════════════════════
+// FRAIS
+// ══════════════════════════════════════
+function g(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+
+function calcNet(l) {
+  if(l.source === 'lbc') {
+    const cg = g('lbc-cg'), malus = g('lbc-malus');
+    return {
+      brut: l.prixEur, net: l.prixEur + cg + malus,
+      bd: { 'Prix annonce': l.prixEur, 'Carte grise': cg, 'Malus écologique': malus }
+    };
+  }
+  const pEur = l.prixKrw * krwRate;
+  const transport = g('fr-transport');
+  const douanePct = g('fr-douane');
+  const tvaPct    = g('fr-tva');
+  const homolog   = g('fr-homolog');
+  const malus     = g('fr-malus');
+  const cg        = g('fr-cg');
+  const douane    = pEur * douanePct / 100;
+  const tva       = (pEur + transport + douane) * tvaPct / 100;
+  const net       = pEur + transport + douane + tva + homolog + malus + cg;
+  return {
+    brut: pEur, net,
+    bd: {
+      'Prix annonce (€)':        Math.round(pEur),
+      'Transport':                transport,
+      [`Douane (${douanePct}%)`]: Math.round(douane),
+      [`TVA (${tvaPct}%)`]:       Math.round(tva),
+      'Homologation':             homolog,
+      'Malus écologique':         malus,
+      'Carte grise':              cg,
+    }
+  };
+}
+
+// ══════════════════════════════════════
+// PARSE
+// ══════════════════════════════════════
+function parsePaste(src) {
+  const raw = (document.getElementById('paste-'+src).value || '').trim();
+  if(!raw) { toast('Aucun texte à analyser'); return; }
+  const lines = raw.split('\n').filter(l => l.trim().length > 4);
+  let added = 0;
+  lines.forEach(line => {
+    const kmM    = line.match(/(\d[\d\s,\.]*)\s*(?:km|킬|キロ)/i);
+    const yearM  = line.match(/\b((?:19|20)\d{2})\b/);
+    const km     = kmM   ? parseInt(kmM[1].replace(/[\s,\.]/g,''))   : null;
+    const year   = yearM ? parseInt(yearM[1]) : null;
+    let prixKrw = null, prixEur = null;
+    if(src !== 'lbc') {
+      // 만원, 원, ₩, 만
+      const krwM = line.match(/(\d[\d\s,]*)\s*(?:만원|원|₩)/i);
+      if(krwM) {
+        let v = parseFloat(krwM[1].replace(/[\s,]/g,''));
+        if(line.includes('만')) v *= 10000;
+        prixKrw = v;
+      }
+      if(!prixKrw) {
+        const bigM = line.match(/(\d[\d,]{5,})/);
+        if(bigM) prixKrw = parseInt(bigM[1].replace(/,/g,''));
+      }
+    } else {
+      const eurM = line.match(/(\d[\d\s]*)(?:\s*€|\s*eur)/i);
+      if(eurM) prixEur = parseFloat(eurM[1].replace(/\s/g,''));
+    }
+    let model = line
+      .replace(kmM?kmM[0]:'','').replace(yearM?yearM[0]:'','')
+      .replace(/\d[\d\s,]*\s*(?:만원|원|₩|만|€|eur|km|킬)/gi,'')
+      .replace(/\d{5,}/g,'').replace(/[^\w\s\-]/g,' ')
+      .replace(/\s+/g,' ').trim() || 'Véhicule';
+    if((src !== 'lbc' && prixKrw) || (src === 'lbc' && prixEur)) {
+      listings.push({ id: ++uid, source: src, model, year, km, fuel: 'Essence', prixKrw: prixKrw||0, prixEur: prixEur||0 });
+      added++;
+    }
+  });
+  document.getElementById('paste-'+src).value = '';
+  updateBadge();
+  toast(`${added} annonce${added>1?'s':''} importée${added>1?'s':''}`);
+  renderComp();
+}
+
+function addManual(src) {
+  const p = {karaba:'k',encar:'e',lbc:'l'}[src];
+  const model = document.getElementById(p+'-model').value.trim();
+  const year  = parseInt(document.getElementById(p+'-year').value)||null;
+  const km    = parseInt(document.getElementById(p+'-km').value)||null;
+  const price = parseFloat(document.getElementById(p+'-price').value)||0;
+  const fuel  = document.getElementById(p+'-fuel').value;
+  if(!model || !price) { toast('Modèle et prix requis'); return; }
+  listings.push({ id: ++uid, source: src, model, year, km, fuel, prixKrw: src!=='lbc'?price:0, prixEur: src==='lbc'?price:0 });
+  ['model','year','km','price'].forEach(f => { const el = document.getElementById(p+'-'+f); if(el) el.value=''; });
+  updateBadge();
+  toast('Annonce ajoutée');
+  renderComp();
+}
+
+function updateBadge() {
+  document.getElementById('count-badge').textContent = listings.length;
+}
+
+// ══════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════
+function renderComp() {
+  updateBadge();
+  const search  = (document.getElementById('search')?.value||'').toLowerCase();
+  const modelF  = (document.getElementById('f-model')?.value||'').toLowerCase();
+  const yMin    = parseInt(document.getElementById('f-ymin')?.value)||0;
+  const yMax    = parseInt(document.getElementById('f-ymax')?.value)||9999;
+  const kMin    = parseInt(document.getElementById('f-kmin')?.value)||0;
+  const kMax    = parseInt(document.getElementById('f-kmax')?.value)||99999999;
+  const sortBy  = document.getElementById('sort-by')?.value||'net';
+
+  let data = listings.map(l => { const c = calcNet(l); return {...l, _net: c.net, _brut: c.brut, _bd: c.bd}; });
+
+  data = data.filter(l => {
+    if(srcFilter !== 'all' && l.source !== srcFilter) return false;
+    if(search && !l.model.toLowerCase().includes(search)) return false;
+    if(modelF && !l.model.toLowerCase().includes(modelF)) return false;
+    if(l.year && (l.year < yMin || l.year > yMax)) return false;
+    if(l.km != null && (l.km < kMin || l.km > kMax)) return false;
+    return true;
+  });
+
+  data.sort((a,b) => {
+    if(sortBy==='net')  return a._net - b._net;
+    if(sortBy==='brut') return a._brut - b._brut;
+    if(sortBy==='km')   return (a.km||0) - (b.km||0);
+    if(sortBy==='year') return (b.year||0) - (a.year||0);
+    return 0;
+  });
+
+  // Stats
+  const sbw = document.getElementById('stats-bar-wrap');
+  if(data.length) {
+    const nets = data.map(d => d._net);
+    const min = Math.min(...nets), max = Math.max(...nets), avg = nets.reduce((a,b)=>a+b,0)/nets.length;
+    const byS = {karaba:0,encar:0,lbc:0};
+    data.forEach(d => byS[d.source]++);
+    sbw.innerHTML = `<div class="stats-bar" style="margin-bottom:20px">
+      <div class="stat-item"><div class="stat-val">${data.length}</div><div class="stat-lbl">Annonces</div></div>
+      <div class="stat-item"><div class="stat-val green">${fmt(min)}</div><div class="stat-lbl">Meilleur prix net</div></div>
+      <div class="stat-item"><div class="stat-val blue">${fmt(avg)}</div><div class="stat-lbl">Prix net moyen</div></div>
+      <div class="stat-item"><div class="stat-val amber">${fmt(max)}</div><div class="stat-lbl">Prix net max</div></div>
+      <div class="stat-item">
+        <div style="display:flex;gap:12px">
+          <div><div style="font-size:14px;font-weight:600;color:var(--karaba)">${byS.karaba}</div><div class="stat-lbl">Karaba</div></div>
+          <div><div style="font-size:14px;font-weight:600;color:var(--encar)">${byS.encar}</div><div class="stat-lbl">Encar</div></div>
+          <div><div style="font-size:14px;font-weight:600;color:var(--lbc)">${byS.lbc}</div><div class="stat-lbl">LBC</div></div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    sbw.innerHTML = '';
+  }
+
+  const res = document.getElementById('results');
+  if(!data.length) {
+    res.innerHTML = `<div class="empty">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">${listings.length ? 'Aucun résultat' : 'Aucune annonce'}</div>
+      <div class="empty-sub">${listings.length ? 'Modifiez vos filtres pour voir plus de résultats.' : 'Ajoutez des annonces depuis l\'onglet Annonces.'}</div>
+    </div>`;
+    return;
+  }
+
+  res.innerHTML = data.map((l, i) => {
+    const rankHtml = i < 3 ? `<div class="rank-num rank-${i+1}">${i+1}</div>` : '';
+    const isKor = l.source !== 'lbc';
+    const brutLabel = isKor
+      ? `${(l.prixKrw/1e6).toFixed(2)}M ₩ → ${fmt(l._brut)}`
+      : fmt(l._brut);
+    const bdRows = Object.entries(l._bd).map(([k,v]) =>
+      `<div class="bd-row"><span>${k}</span><span>${fmt(v)}</span></div>`
+    ).join('') + `<div class="bd-row bd-total"><span>Total estimé</span><span>${fmt(l._net)}</span></div>`;
+
+    const srcName = {karaba:'Karaba',encar:'Encar',lbc:'LeBonCoin'}[l.source];
+    return `<div class="car-card ${l.source}">
+      ${rankHtml}
+      <div class="card-main">
+        <div class="card-left">
+          <div style="margin-bottom:6px"><span class="src-pill ${l.source}">${srcName}</span></div>
+          <div class="card-model">${l.model}</div>
+          <div class="card-meta">
+            ${l.year ? `<span class="meta-chip">📅 ${l.year}</span>` : ''}
+            ${l.km != null ? `<span class="meta-chip">📏 ${l.km.toLocaleString('fr-FR')} km</span>` : ''}
+            <span class="meta-chip">⛽ ${l.fuel}</span>
+            ${isKor ? `<span class="meta-chip">₩ ${(l.prixKrw/1e6).toFixed(1)}M</span>` : ''}
+          </div>
+        </div>
+        <div class="card-right">
+          <div class="price-hint">Prix total estimé</div>
+          <div class="price-net">${fmt(l._net)}</div>
+          <div class="price-brut-tag">${brutLabel}</div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="detail-toggle" onclick="toggleBD('bd-${l.id}',this)">Voir le détail des frais</button>
+        <button class="remove-btn" onclick="remove(${l.id})">Supprimer</button>
+      </div>
+      <div class="breakdown" id="bd-${l.id}">${bdRows}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleBD(id, btn) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  btn.textContent = el.classList.contains('open') ? 'Masquer le détail' : 'Voir le détail des frais';
+}
+
+function remove(id) { listings = listings.filter(l => l.id !== id); updateBadge(); renderComp(); }
+function clearAll() { if(!listings.length || confirm('Supprimer toutes les annonces ?')) { listings = []; updateBadge(); renderComp(); } }
+function fmt(n) { return Math.round(n).toLocaleString('fr-FR') + ' €'; }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+</script>
+</body>
+</html>
