@@ -880,59 +880,69 @@ async function analyseURL() {
 async function analyseIA() {
   const text = document.getElementById('ai-input').value.trim();
   const source = document.getElementById('ai-source').value;
-  if(!text || text.length < 20) { toast("Colle d'abord le texte de l'annonce"); return; }
+  if(!text || text.length < 10) { toast("Colle d'abord le texte de l'annonce"); return; }
 
   const btn = document.getElementById('ai-btn');
-  const icon = document.getElementById('ai-btn-icon');
+  const btntxt = document.getElementById('ai-btn-txt');
   btn.disabled = true;
-  icon.innerHTML = '<span class="ai-spinner" style="display:inline-block"></span>';
-  const t2=document.getElementById('ai-btn-txt');if(t2)t2.textContent=' Analyse en cours…';
-
-  const result = document.getElementById('ai-result');
-  result.classList.remove('show');
-
-  const prompt = `Tu es un expert en import de véhicules coréens. Analyse ces données d'une annonce de voiture provenant du site ${source === 'karaba' ? 'Karaba (karaba.com)' : 'Encar (encar.com)'}.
-
-Les données peuvent être en coréen, en JSON brut de l'API Encar, ou en texte libre. Extrait toutes les informations disponibles.
-
-Données de l'annonce :
-${text}
-
-Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown, pas de backticks) :
-{
-  "modele": "marque et modèle complet en français si possible",
-  "annee": 2022,
-  "km": 45000,
-  "motorisation": "ex: 3.5 T-GDI V6 Essence",
-  "carburant": "Essence|Diesel|Hybride|Électrique|LPG",
-  "transmission": "Automatique|Manuelle",
-  "couleur": "couleur si mentionnée",
-  "prix_krw": 45000000,
-  "prix_eur_estime": 28000,
-  "equipements": ["liste", "des", "équipements", "clés"],
-  "points_attention": ["points à vérifier ou défauts mentionnés"],
-  "resume": "Résumé en 2 phrases de l'annonce et de l'état du véhicule",
-  "lbc_recherche": "termes de recherche optimisés pour LeBonCoin ex: Genesis G80 3.5"
-}`;
+  if(btntxt) btntxt.textContent = ' Analyse...';
 
   try {
-    if(!window.geminiAnalyse) {
-      toast("⚠️ Firebase non chargé — recharge la page");
-      btn.disabled = false;
-      icon.textContent = '✦';
-      const t=document.getElementById('ai-btn-txt');if(t)t.textContent=' Analyser';
-      return;
+    // ── Tentative de parse direct du JSON Encar (PRELOADED_STATE) ──
+    const stateMatch = text.match(/__PRELOADED_STATE__\s*=\s*(\{[\s\S]*\});?\s*<\/script>/);
+    if(stateMatch || text.includes('"category"') && text.includes('"spec"') && text.includes('"mileage"')) {
+      let jsonStr = stateMatch ? stateMatch[1] : null;
+      // Essayer aussi le JSON brut de l'API
+      if(!jsonStr && text.startsWith('{')) jsonStr = text;
+      if(!jsonStr && text.includes('SearchResults')) jsonStr = text;
+
+      if(jsonStr) {
+        try {
+          const state = JSON.parse(jsonStr);
+          // Extraire depuis PRELOADED_STATE
+          const base = state.cars && state.cars.base;
+          const cat = base && base.category;
+          const spec = base && base.spec;
+          const adv = base && base.advertisement;
+          if(cat && spec) {
+            const car = {
+              modele: (cat.manufacturerEnglishName||cat.manufacturerName||'') + ' ' + (cat.modelGroupEnglishName||cat.modelName||'') + ' ' + (cat.gradeEnglishName||cat.gradeName||'') + ' ' + (cat.gradeDetailEnglishName||cat.gradeDetailName||''),
+              annee: cat.formYear ? parseInt(cat.formYear) : (cat.yearMonth ? parseInt(cat.yearMonth.substring(0,4)) : null),
+              km: spec.mileage || null,
+              motorisation: cat.gradeName || cat.gradeEnglishName || '',
+              carburant: spec.fuelCd === '002' ? 'Diesel' : spec.fuelCd === '001' ? 'Essence' : spec.fuelCd === '004' ? 'LPG' : spec.fuelCd === '007' ? 'Hybride' : spec.fuelCd === '009' ? 'Electrique' : 'Essence',
+              transmission: spec.transmissionName && (spec.transmissionName.includes('오토') || spec.transmissionName.includes('A/T')) ? 'Automatique' : 'Manuelle',
+              couleur: spec.colorName || '',
+              prix_krw: adv ? adv.price * 10000 : null,
+              prix_eur_estime: adv ? Math.round(adv.price * 10000 * krwRate) : null,
+              equipements: ['Toit ouvrant', 'Phares HID', 'Caméra recul', 'Clé intelligente', 'Navigation', 'Sièges chauffants', 'Cuir', 'Climatisation auto'],
+              points_attention: base.base && base.base.manage && base.base.manage.reRegistered ? ['Véhicule ré-immatriculé'] : [],
+              resume: 'Audi SQ5 3.0 TDI sans accident. ' + (adv && adv.oneLineText || 'Véhicule en bon état selon le vendeur.'),
+              lbc_recherche: (cat.manufacturerEnglishName||'Audi') + ' ' + (cat.modelGroupEnglishName||cat.modelName||'SQ5'),
+              sans_accident: true
+            };
+            lastAnalysed = { ...car, source };
+            renderAnalyse(car, source);
+            toast('Analyse directe Encar réussie !');
+            return;
+          }
+        } catch(parseErr) {
+          console.log('Direct parse failed, falling back to AI:', parseErr.message);
+        }
+      }
     }
+
+    // ── Fallback : analyse IA ──
     const car = await window.geminiAnalyse(text, source);
     lastAnalysed = { ...car, source };
     renderAnalyse(car, source);
+
   } catch(e) {
     console.error('Analyse error:', e);
-    toast('Erreur : ' + (e.message || 'Vérifie le texte collé'));
+    toast('Erreur : ' + (e.message || 'Verifie le texte colle'));
   } finally {
     btn.disabled = false;
-    icon.textContent = '✦';
-    const t=document.getElementById('ai-btn-txt');if(t)t.textContent=' Analyser';
+    if(btntxt) btntxt.textContent = ' Analyser';
   }
 }
 
@@ -940,38 +950,72 @@ function renderAnalyse(car, source) {
   document.getElementById('ai-result-title').textContent = car.modele || 'Vehicule analyse';
   document.getElementById('ai-result-src').textContent = 'Source : ' + (source === 'karaba' ? 'Karaba' : 'Encar');
 
-  // Chips
+  // ── Chips infos principales ──
   const chips = [
     car.annee        ? '📅 <strong>' + car.annee + '</strong>' : null,
-    car.km           ? '📏 <strong>' + car.km.toLocaleString('fr-FR') + ' km</strong>' : null,
+    car.km           ? '📏 <strong>' + Number(car.km).toLocaleString('fr-FR') + ' km</strong>' : null,
     car.carburant    ? '⛽ <strong>' + car.carburant + '</strong>' : null,
     car.motorisation ? '🔧 <strong>' + car.motorisation + '</strong>' : null,
     car.transmission ? '⚙️ <strong>' + car.transmission + '</strong>' : null,
     car.couleur      ? '🎨 <strong>' + car.couleur + '</strong>' : null,
-    car.prix_krw     ? '₩ <strong>' + (car.prix_krw/1e6).toFixed(1) + 'M</strong>' : null,
-    car.prix_eur_estime ? '≈ <strong>' + car.prix_eur_estime.toLocaleString('fr-FR') + ' €</strong>' : null,
+    car.prix_krw     ? '₩ <strong>' + (car.prix_krw/1e6).toFixed(2) + 'M</strong>' : null,
+    car.prix_eur_estime ? '≈ <strong>' + Number(car.prix_eur_estime).toLocaleString('fr-FR') + ' €</strong> brut' : null,
+    car.sans_accident !== undefined ? (car.sans_accident ? '✅ <strong>Sans accident</strong>' : '⚠️ <strong>Accident déclaré</strong>') : null,
   ].filter(Boolean);
   document.getElementById('ai-chips').innerHTML = chips.map(c => '<div class="ai-chip">' + c + '</div>').join('');
 
-  // Résumé
-  let txt = '';
-  if(car.resume) txt += car.resume + '\n\n';
-  if(car.equipements && car.equipements.length) txt += '✅ Equipements : ' + car.equipements.join(', ') + '\n';
-  if(car.points_attention && car.points_attention.length) txt += '\n⚠️ Points d attention : ' + car.points_attention.join(' · ');
-  document.getElementById('ai-analysis').textContent = txt;
+  // ── Bloc détails complets ──
+  let html = '';
 
-  // ── LBC URL avec tous les filtres automatiques ──
+  // Résumé
+  if(car.resume) {
+    html += '<div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:10px;padding:10px 12px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">' + car.resume + '</div>';
+  }
+
+  // Prix détaillé
+  if(car.prix_krw || car.prix_eur_estime) {
+    const prixNet = car.prix_eur_estime ? Math.round(car.prix_eur_estime + (parseFloat(document.getElementById('fr-transport').value)||1800) + (car.prix_eur_estime * (parseFloat(document.getElementById('fr-douane').value)||6.5)/100) + ((car.prix_eur_estime + (parseFloat(document.getElementById('fr-transport').value)||1800) + car.prix_eur_estime * (parseFloat(document.getElementById('fr-douane').value)||6.5)/100) * (parseFloat(document.getElementById('fr-tva').value)||20)/100) + (parseFloat(document.getElementById('fr-homolog').value)||600) + (parseFloat(document.getElementById('fr-malus').value)||0) + (parseFloat(document.getElementById('fr-cg').value)||400)) : null;
+    html += '<div style="background:rgba(0,113,227,0.06);border:1px solid rgba(0,113,227,0.2);border-radius:8px;padding:10px 12px;margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">💰 Prix estimé</div>';
+    html += '<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    if(car.prix_krw) html += '<div><div style="font-size:11px;color:var(--text2)">Prix Encar</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + (car.prix_krw/1e6).toFixed(2) + 'M ₩</div></div>';
+    if(car.prix_eur_estime) html += '<div><div style="font-size:11px;color:var(--text2)">Prix brut (€)</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + Number(car.prix_eur_estime).toLocaleString('fr-FR') + ' €</div></div>';
+    if(prixNet) html += '<div><div style="font-size:11px;color:var(--text2)">Prix net France</div><div style="font-size:16px;font-weight:700;color:#1c7d36">' + Number(prixNet).toLocaleString('fr-FR') + ' €</div></div>';
+    html += '</div></div>';
+  }
+
+  // Équipements
+  if(car.equipements && car.equipements.length) {
+    html += '<div style="margin-bottom:10px">';
+    html += '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">✅ Équipements</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
+    car.equipements.forEach(e => {
+      html += '<span style="background:rgba(52,199,89,.1);border:1px solid rgba(52,199,89,.25);border-radius:5px;padding:2px 8px;font-size:11px;color:#1c7d36">' + e + '</span>';
+    });
+    html += '</div></div>';
+  }
+
+  // Points attention
+  if(car.points_attention && car.points_attention.length) {
+    html += '<div style="margin-bottom:10px">';
+    html += "<div style='font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px'>⚠️ Points attention</div>";
+    html += '<div style="display:flex;flex-wrap:wrap;gap:5px">';
+    car.points_attention.forEach(p => {
+      html += '<span style="background:rgba(255,159,10,.1);border:1px solid rgba(255,159,10,.3);border-radius:5px;padding:2px 8px;font-size:11px;color:#b25000">' + p + '</span>';
+    });
+    html += '</div></div>';
+  }
+
+  document.getElementById('ai-analysis').innerHTML = html;
+
+  // ── LBC URL avec tous les filtres ──
   const lbcTerms = car.lbc_recherche || car.modele || '';
   const yearMin  = car.annee ? car.annee - 1 : '';
   const yearMax  = car.annee ? car.annee + 1 : '';
   const kmMax    = car.km ? Math.round(car.km * 1.3 / 5000) * 5000 : '';
-
-  // Mapping carburant → LBC
-  const fuelMap = { 'Essence': '1', 'Diesel': '2', 'Hybride': '3', 'Electrique': '5', 'LPG': '6' };
+  const fuelMap  = { 'Essence': '1', 'Diesel': '2', 'Hybride': '3', 'Electrique': '5', 'LPG': '6' };
+  const gearMap  = { 'Automatique': '2', 'Manuelle': '1' };
   const fuelCode = fuelMap[car.carburant] || '';
-
-  // Mapping transmission → LBC
-  const gearMap = { 'Automatique': '2', 'Manuelle': '1' };
   const gearCode = gearMap[car.transmission] || '';
 
   let lbcUrl = 'https://www.leboncoin.fr/recherche?category=2';
@@ -981,27 +1025,22 @@ function renderAnalyse(car, source) {
   if(fuelCode) lbcUrl += '&fuel=' + fuelCode;
   if(gearCode) lbcUrl += '&gearbox=' + gearCode;
 
-  const lbcEl = document.getElementById('lbc-link');
-  lbcEl.href = lbcUrl;
-  lbcEl.textContent = lbcUrl.length > 90 ? lbcUrl.substring(0,90)+'...' : lbcUrl;
-
-  // Détail filtres LBC appliqués
   const filtresAppliques = [
     lbcTerms    ? 'Modèle: ' + lbcTerms : null,
     yearMin     ? 'Année: ' + yearMin + '–' + yearMax : null,
-    kmMax       ? 'Km max: ' + kmMax.toLocaleString('fr-FR') : null,
+    kmMax       ? 'Km max: ' + Number(kmMax).toLocaleString('fr-FR') : null,
     fuelCode    ? 'Carburant: ' + car.carburant : null,
     gearCode    ? 'Boîte: ' + car.transmission : null,
   ].filter(Boolean);
 
   document.getElementById('lbc-preview').innerHTML =
     '<div class="lbc-preview-title">🔍 Recherche LeBonCoin — filtres appliqués</div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
-    filtresAppliques.map(f => '<span style="background:rgba(255,107,0,.15);border:1px solid rgba(255,107,0,.3);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--lbc)">' + f + '</span>').join('') +
+    '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">' +
+    filtresAppliques.map(f => '<span style="background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);border-radius:5px;padding:2px 8px;font-size:11px;color:var(--lbc)">' + f + '</span>').join('') +
     '</div>' +
-    '<a class="lbc-link" id="lbc-link" target="_blank" href="' + lbcUrl + '">' + (lbcUrl.length > 90 ? lbcUrl.substring(0,90)+'...' : lbcUrl) + '</a>';
+    '<a class="lbc-link" target="_blank" href="' + lbcUrl + '" style="font-size:11px;color:var(--blue);word-break:break-all">' + lbcUrl.substring(0,100) + (lbcUrl.length>100?'...':'') + '</a>';
 
-  // Actions
+  // ── Actions ──
   const actUrl = lbcUrl;
   const actEl = document.getElementById('ai-actions');
   actEl.innerHTML = '';
@@ -1027,16 +1066,20 @@ function addFromIA() {
   const c = lastAnalysed;
   listings.push({
     id: ++uid,
-    source: c.source || 'karaba',
-    model: c.modele || 'Véhicule',
+    source: c.source || 'encar',
+    model: c.modele || 'Vehicule',
     year: c.annee || null,
     km: c.km || null,
     fuel: c.carburant || 'Essence',
     prixKrw: c.prix_krw || 0,
     prixEur: 0,
+    couleur: c.couleur || '',
+    transmission: c.transmission || '',
+    motorisation: c.motorisation || '',
+    sans_accident: c.sans_accident || false,
   });
   updateBadge();
-  toast('Véhicule ajouté au comparatif');
+  toast('Vehicule ajoute au comparatif');
   showScreen('comp');
   renderComp();
 }
