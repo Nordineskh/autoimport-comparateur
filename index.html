@@ -833,62 +833,47 @@ async function analyseURL() {
   if(!url) { toast("Colle d'abord un lien Encar ou Karaba"); return; }
 
   const btn = document.getElementById('ai-url-btn');
-  const icon = document.getElementById('ai-url-icon');
   btn.disabled = true;
-  icon.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite"></span>';
-
-  // Détecter la source et l'ID
-  let source = 'encar', carId = null, carInfo = {};
-
-  // Encar : /cars/detail/ID ou /car/detail/ID
-  const encarM = url.match(/encar\.com\/(?:cars?|fem).*?\/(\d{6,})/i) ||
-                 url.match(/detail\/(\d{6,})/i);
-  if(encarM) { source = 'encar'; carId = encarM[1]; }
-
-  // Karaba : différents formats
-  const karabaM = url.match(/karaba\.com.*?[\/=](\d{5,})/i);
-  if(karabaM) { source = 'karaba'; carId = karabaM[1]; }
+  btn.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px"></span> Analyse...';
 
   try {
-    let rawData = '';
+    // Extraire l'ID depuis l'URL
+    const idMatch = url.match(/detail\/([0-9]+)/i) || url.match(/[?&]carid=([0-9]+)/i) || url.match(/\/([0-9]{6,})/);
+    const carId = idMatch ? idMatch[1] : null;
+    let source = url.includes('encar') ? 'encar' : 'karaba';
+    let rawText = 'URL: ' + url;
 
     if(source === 'encar' && carId) {
-      // API publique Encar non documentée
-      const apiUrl = 'https://api.encar.com/v1/car/' + carId + '?include=inspection,options';
-      try {
-        const r = await fetch(apiUrl, { headers: { 'Accept': 'application/json', 'Referer': 'https://www.encar.com/' } });
-        const d = await r.json();
-        rawData = JSON.stringify(d);
-      } catch {
-        // Fallback : API search par ID
+      // Essayer l'API publique Encar avec différents endpoints
+      const apis = [
+        'https://api.encar.com/search/car/list/premium?count=1&q=(And.Hidden.N._.CarNo.' + carId + '.)',
+        'https://api.encar.com/search/car/list/general?count=1&q=(And.Hidden.N._.CarNo.' + carId + '.)',
+      ];
+      for(const api of apis) {
         try {
-          const r2 = await fetch('https://api.encar.com/search/car/list/general?count=1&q=(And.CarNo.' + carId + '.)', {
-            headers: { 'Referer': 'https://www.encar.com/' }
-          });
-          const d2 = await r2.json();
-          rawData = JSON.stringify(d2);
-        } catch {
-          rawData = 'ID véhicule Encar: ' + carId + '. URL: ' + url;
-        }
+          const r = await fetch(api, { headers: { 'Referer': 'https://fem.encar.com/' } });
+          if(r.ok) {
+            const d = await r.json();
+            if(d.SearchResults && d.SearchResults.length > 0) {
+              rawText = JSON.stringify(d.SearchResults[0]);
+              break;
+            }
+          }
+        } catch(e) { console.log('API attempt failed:', e.message); }
       }
-    } else {
-      rawData = 'URL: ' + url + (carId ? ' | ID: ' + carId : '') + ' | Source: ' + source;
     }
 
-    // Confier à Claude l'analyse
-    document.getElementById('ai-input').value = rawData.substring(0, 3000);
+    // Remplir le textarea et lancer l'analyse IA
+    document.getElementById('ai-input').value = rawText;
     document.getElementById('ai-source').value = source;
-    btn.disabled = false;
-    icon.textContent = '✦';
-    // Lancer l'analyse IA automatiquement
     await analyseIA();
     document.getElementById('ai-url').value = '';
 
   } catch(e) {
-    toast("Erreur lors de l'analyse du lien");
+    toast('Erreur : ' + e.message);
+  } finally {
     btn.disabled = false;
-    icon.textContent = '✦';
-    console.error(e);
+    btn.innerHTML = '<span id="ai-url-icon">✦</span> Analyser le lien';
   }
 }
 
@@ -952,46 +937,87 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown,
 }
 
 function renderAnalyse(car, source) {
-  // Title
-  document.getElementById('ai-result-title').textContent = car.modele || 'Véhicule analysé';
-  document.getElementById('ai-result-src').textContent = source === 'karaba' ? 'Source : Karaba' : 'Source : Encar';
+  document.getElementById('ai-result-title').textContent = car.modele || 'Vehicule analyse';
+  document.getElementById('ai-result-src').textContent = 'Source : ' + (source === 'karaba' ? 'Karaba' : 'Encar');
 
   // Chips
   const chips = [
-    car.annee       ? `📅 <strong>${car.annee}</strong>` : null,
-    car.km          ? `📏 <strong>${car.km.toLocaleString('fr-FR')} km</strong>` : null,
-    car.carburant   ? `⛽ <strong>${car.carburant}</strong>` : null,
-    car.motorisation? `🔧 <strong>${car.motorisation}</strong>` : null,
-    car.transmission? `⚙️ <strong>${car.transmission}</strong>` : null,
-    car.couleur     ? `🎨 <strong>${car.couleur}</strong>` : null,
-    car.prix_krw    ? `₩ <strong>${(car.prix_krw/1e6).toFixed(1)}M</strong>` : null,
-    car.prix_eur_estime ? `≈ <strong>${car.prix_eur_estime.toLocaleString('fr-FR')} €</strong> brut` : null,
+    car.annee        ? '📅 <strong>' + car.annee + '</strong>' : null,
+    car.km           ? '📏 <strong>' + car.km.toLocaleString('fr-FR') + ' km</strong>' : null,
+    car.carburant    ? '⛽ <strong>' + car.carburant + '</strong>' : null,
+    car.motorisation ? '🔧 <strong>' + car.motorisation + '</strong>' : null,
+    car.transmission ? '⚙️ <strong>' + car.transmission + '</strong>' : null,
+    car.couleur      ? '🎨 <strong>' + car.couleur + '</strong>' : null,
+    car.prix_krw     ? '₩ <strong>' + (car.prix_krw/1e6).toFixed(1) + 'M</strong>' : null,
+    car.prix_eur_estime ? '≈ <strong>' + car.prix_eur_estime.toLocaleString('fr-FR') + ' €</strong>' : null,
   ].filter(Boolean);
-  document.getElementById('ai-chips').innerHTML = chips.map(c => `<div class="ai-chip">${c}</div>`).join('');
+  document.getElementById('ai-chips').innerHTML = chips.map(c => '<div class="ai-chip">' + c + '</div>').join('');
 
-  // Résumé + équipements + points attention
+  // Résumé
   let txt = '';
   if(car.resume) txt += car.resume + '\n\n';
-  if(car.equipements?.length) txt += '✅ Équipements : ' + car.equipements.join(', ') + '\n';
-  if(car.points_attention?.length) txt += '\n⚠️ Points d\'attention : ' + car.points_attention.join(' · ');
+  if(car.equipements && car.equipements.length) txt += '✅ Equipements : ' + car.equipements.join(', ') + '\n';
+  if(car.points_attention && car.points_attention.length) txt += '\n⚠️ Points d attention : ' + car.points_attention.join(' · ');
   document.getElementById('ai-analysis').textContent = txt;
 
-  // LBC link
+  // ── LBC URL avec tous les filtres automatiques ──
   const lbcTerms = car.lbc_recherche || car.modele || '';
-  const yearMin = car.annee ? car.annee - 1 : '';
-  const yearMax = car.annee ? car.annee + 1 : '';
-  const kmMax = car.km ? Math.round(car.km * 1.25 / 10000) * 10000 : '';
-  const lbcQ = encodeURIComponent(lbcTerms);
-  const lbcUrl = `https://www.leboncoin.fr/recherche?category=2&text=${lbcQ}${yearMin?'&regdate='+yearMin+'-'+yearMax:''}${kmMax?'&mileage=0-'+kmMax:''}`;
+  const yearMin  = car.annee ? car.annee - 1 : '';
+  const yearMax  = car.annee ? car.annee + 1 : '';
+  const kmMax    = car.km ? Math.round(car.km * 1.3 / 5000) * 5000 : '';
+
+  // Mapping carburant → LBC
+  const fuelMap = { 'Essence': '1', 'Diesel': '2', 'Hybride': '3', 'Electrique': '5', 'LPG': '6' };
+  const fuelCode = fuelMap[car.carburant] || '';
+
+  // Mapping transmission → LBC
+  const gearMap = { 'Automatique': '2', 'Manuelle': '1' };
+  const gearCode = gearMap[car.transmission] || '';
+
+  let lbcUrl = 'https://www.leboncoin.fr/recherche?category=2';
+  if(lbcTerms) lbcUrl += '&text=' + encodeURIComponent(lbcTerms);
+  if(yearMin && yearMax) lbcUrl += '&regdate=' + yearMin + '-' + yearMax;
+  if(kmMax) lbcUrl += '&mileage=0-' + kmMax;
+  if(fuelCode) lbcUrl += '&fuel=' + fuelCode;
+  if(gearCode) lbcUrl += '&gearbox=' + gearCode;
+
   const lbcEl = document.getElementById('lbc-link');
   lbcEl.href = lbcUrl;
-  lbcEl.textContent = lbcUrl.length > 80 ? lbcUrl.substring(0,80)+'…' : lbcUrl;
+  lbcEl.textContent = lbcUrl.length > 90 ? lbcUrl.substring(0,90)+'...' : lbcUrl;
+
+  // Détail filtres LBC appliqués
+  const filtresAppliques = [
+    lbcTerms    ? 'Modèle: ' + lbcTerms : null,
+    yearMin     ? 'Année: ' + yearMin + '–' + yearMax : null,
+    kmMax       ? 'Km max: ' + kmMax.toLocaleString('fr-FR') : null,
+    fuelCode    ? 'Carburant: ' + car.carburant : null,
+    gearCode    ? 'Boîte: ' + car.transmission : null,
+  ].filter(Boolean);
+
+  document.getElementById('lbc-preview').innerHTML =
+    '<div class="lbc-preview-title">🔍 Recherche LeBonCoin — filtres appliqués</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
+    filtresAppliques.map(f => '<span style="background:rgba(255,107,0,.15);border:1px solid rgba(255,107,0,.3);border-radius:6px;padding:2px 8px;font-size:11px;color:var(--lbc)">' + f + '</span>').join('') +
+    '</div>' +
+    '<a class="lbc-link" id="lbc-link" target="_blank" href="' + lbcUrl + '">' + (lbcUrl.length > 90 ? lbcUrl.substring(0,90)+'...' : lbcUrl) + '</a>';
 
   // Actions
-  document.getElementById('ai-actions').innerHTML = `
-    <button class="ai-action-btn lbc" onclick="window.open('${lbcUrl}','_blank')">🔍 Ouvrir LeBonCoin</button>
-    <button class="ai-action-btn primary" onclick="addFromIA()">+ Ajouter au comparatif</button>
-    <button class="ai-action-btn" onclick="document.getElementById('ai-input').value='';document.getElementById('ai-result').classList.remove('show')">✕ Effacer</button>`;
+  const actUrl = lbcUrl;
+  const actEl = document.getElementById('ai-actions');
+  actEl.innerHTML = '';
+  const b1 = document.createElement('button');
+  b1.className = 'ai-action-btn lbc';
+  b1.textContent = '🔍 Ouvrir LeBonCoin';
+  b1.onclick = function(){ window.open(actUrl,'_blank'); };
+  const b2 = document.createElement('button');
+  b2.className = 'ai-action-btn primary';
+  b2.textContent = '+ Ajouter au comparatif';
+  b2.onclick = addFromIA;
+  const b3 = document.createElement('button');
+  b3.className = 'ai-action-btn';
+  b3.textContent = '✕ Effacer';
+  b3.onclick = function(){ document.getElementById('ai-input').value=''; document.getElementById('ai-result').classList.remove('show'); };
+  actEl.appendChild(b1); actEl.appendChild(b2); actEl.appendChild(b3);
 
   document.getElementById('ai-result').classList.add('show');
 }
