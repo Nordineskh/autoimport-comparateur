@@ -414,8 +414,8 @@ const db = getFirestore(app);
 
 // ── GEMINI CONFIG ──
 
-const OPENROUTER_KEY = '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';
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+
 
 // ── FIRESTORE SESSIONS ──
 window.fbSaveSession = async function(session) {
@@ -446,63 +446,31 @@ window.fbDeleteSession = async function(id) {
 
 // ── GEMINI ANALYSE ──
 window.geminiAnalyse = async function(text, source) {
-  const prompt = `Tu es un expert en import de véhicules coréens. Analyse ces données d'une annonce de voiture provenant du site ${source === 'karaba' ? 'Karaba (karaba.com)' : 'Encar (encar.com)'}.
+  const prompt = 'Analyse cette annonce de vehicule (' + source + '). Reponds UNIQUEMENT en JSON valide sans markdown ni explication:\n' +
+    '{"modele":"","annee":0,"km":0,"motorisation":"","carburant":"Essence","transmission":"Automatique","couleur":"","prix_krw":0,"prix_eur_estime":0,"equipements":[],"points_attention":[],"resume":"","lbc_recherche":""}\n\nAnnonce:\n' +
+    text.substring(0, 2000);
 
-Les données peuvent être en coréen, en JSON brut de l'API Encar, ou en texte libre. Extrait toutes les informations disponibles.
-
-Données de l'annonce :
-${text}
-
-Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown, pas de backticks) :
-{
-  "modele": "marque et modèle complet",
-  "annee": 2022,
-  "km": 45000,
-  "motorisation": "ex: 3.5 T-GDI V6 Essence",
-  "carburant": "Essence|Diesel|Hybride|Electrique|LPG",
-  "transmission": "Automatique|Manuelle",
-  "couleur": "couleur si mentionnee",
-  "prix_krw": 45000000,
-  "prix_eur_estime": 28000,
-  "equipements": ["liste", "des", "equipements", "cles"],
-  "points_attention": ["points a verifier ou defauts mentionnes"],
-  "resume": "Resume en 2 phrases de l annonce et de l etat du vehicule",
-  "lbc_recherche": "termes de recherche optimises pour LeBonCoin ex: Genesis G80 3.5"
-}`;
-
-  const resp = await fetch(OPENROUTER_URL, {
+  const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + OPENROUTER_KEY,
+      'Authorization': 'Bearer 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',
       'HTTP-Referer': 'https://nordineskh.github.io',
-      'X-Title': 'AutoImport Comparateur'
+      'X-Title': 'AutoImport'
     },
     body: JSON.stringify({
-      model: 'meta-llama/llama-3.1-8b-instruct:free',
+      model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
-      max_tokens: 1500
+      max_tokens: 800
     })
   });
-
-  if(!resp.ok) {
-    const err = await resp.json();
-    console.error('OpenRouter error:', err);
-    throw new Error('API error: ' + (err.error?.message || resp.status));
-  }
-
   const data = await resp.json();
-  console.log('OpenRouter response:', JSON.stringify(data).substring(0, 300));
-  const raw = data.choices?.[0]?.message?.content || '';
-  const clean = raw.replace(/```json|```/g, '').trim();
-  try {
-    return JSON.parse(clean);
-  } catch(e) {
-    const jsonMatch = clean.match(/\{[\s\S]*\}/);
-    if(jsonMatch) return JSON.parse(jsonMatch[0]);
-    throw new Error('Impossible de parser la reponse JSON');
-  }
+  if(data.error) throw new Error(data.error.message);
+  const raw = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '{}';
+  const clean = raw.replace(/```json|```/g,'').trim();
+  const jsonMatch = clean.match(/[{][^]*[}]/);
+  return JSON.parse(jsonMatch ? jsonMatch[0] : clean);
 };
 
 window.firebaseReady = true;
