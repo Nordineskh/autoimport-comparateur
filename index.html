@@ -413,9 +413,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // ── GEMINI CONFIG ──
-const GEMINI_KEY = 'AIzaSyDTt99Qnm4QJLkZvn3jU8JajcQWbwMG_DY';
-// Clé Google AI Studio (format AQ.) — utilise v1beta avec gemini-pro ou gemini-2.0-flash
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+
+const OPENROUTER_KEY = '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';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // ── FIRESTORE SESSIONS ──
 window.fbSaveSession = async function(session) {
@@ -459,48 +459,49 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown,
   "annee": 2022,
   "km": 45000,
   "motorisation": "ex: 3.5 T-GDI V6 Essence",
-  "carburant": "Essence|Diesel|Hybride|Électrique|LPG",
+  "carburant": "Essence|Diesel|Hybride|Electrique|LPG",
   "transmission": "Automatique|Manuelle",
-  "couleur": "couleur si mentionnée",
+  "couleur": "couleur si mentionnee",
   "prix_krw": 45000000,
   "prix_eur_estime": 28000,
-  "equipements": ["liste", "des", "équipements", "clés"],
-  "points_attention": ["points à vérifier ou défauts mentionnés"],
-  "resume": "Résumé en 2 phrases de l'annonce et de l'état du véhicule",
-  "lbc_recherche": "termes de recherche optimisés pour LeBonCoin ex: Genesis G80 3.5"
+  "equipements": ["liste", "des", "equipements", "cles"],
+  "points_attention": ["points a verifier ou defauts mentionnes"],
+  "resume": "Resume en 2 phrases de l annonce et de l etat du vehicule",
+  "lbc_recherche": "termes de recherche optimises pour LeBonCoin ex: Genesis G80 3.5"
 }`;
 
-  const resp = await fetch(GEMINI_URL, {
+  const resp = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + OPENROUTER_KEY,
+      'HTTP-Referer': 'https://nordineskh.github.io',
+      'X-Title': 'AutoImport Comparateur'
     },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 1500
-      }
+      model: 'google/gemini-2.0-flash-exp:free',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+      max_tokens: 1500
     })
   });
 
   if(!resp.ok) {
     const err = await resp.json();
-    console.error('Gemini error:', err);
-    throw new Error('Gemini API error: ' + (err.error?.message || resp.status));
+    console.error('OpenRouter error:', err);
+    throw new Error('API error: ' + (err.error?.message || resp.status));
   }
 
   const data = await resp.json();
-  console.log('Gemini raw response:', JSON.stringify(data).substring(0, 300));
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const clean = raw.replace(/```json[\s\S]*?```|```[\s\S]*?```/g, m => m.replace(/```json|```/g,'')).trim();
+  console.log('OpenRouter response:', JSON.stringify(data).substring(0, 300));
+  const raw = data.choices?.[0]?.message?.content || '';
+  const clean = raw.replace(/```json|```/g, '').trim();
   try {
     return JSON.parse(clean);
   } catch(e) {
-    // Fallback: extraire le JSON du texte
     const jsonMatch = clean.match(/\{[\s\S]*\}/);
     if(jsonMatch) return JSON.parse(jsonMatch[0]);
-    throw new Error('Impossible de parser la réponse JSON');
+    throw new Error('Impossible de parser la reponse JSON');
   }
 };
 
