@@ -309,6 +309,81 @@ header {
 .empty-title { font-size: 17px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
 .empty-sub { font-size: 13px; }
 
+.session-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border-radius: var(--radius-sm);
+  padding: 9px 11px; margin-bottom: 6px; cursor: pointer;
+  border: 1.5px solid transparent; transition: all .15s;
+}
+.session-item:hover { border-color: var(--border2); background: var(--surface); }
+.session-item.active { border-color: var(--blue); background: rgba(0,113,227,0.06); }
+
+/* ── ANALYSE IA ── */
+.ai-panel {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1.5px solid var(--border); padding: 20px;
+  margin-bottom: 14px; max-width: 760px;
+}
+.ai-panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.ai-badge {
+  background: linear-gradient(135deg, #5e5ce6, #bf5af2);
+  color: #fff; font-size: 11px; font-weight: 700;
+  border-radius: 6px; padding: 3px 9px; letter-spacing: .04em;
+}
+.ai-desc { font-size: 12px; color: var(--text3); }
+.ai-input-wrap { display: flex; gap: 10px; align-items: flex-start; }
+.ai-textarea {
+  flex: 1; min-height: 110px; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 14px; color: var(--text); font-size: 13px;
+  font-family: 'Inter', sans-serif; resize: vertical; outline: none;
+  transition: all .15s; line-height: 1.6;
+}
+.ai-textarea:focus { background: var(--surface); border-color: #5e5ce6; box-shadow: 0 0 0 3px rgba(94,92,230,.1); }
+.ai-textarea::placeholder { color: var(--text3); font-size: 12.5px; line-height: 1.7; }
+.ai-btn {
+  padding: 10px 18px; background: linear-gradient(135deg, #5e5ce6, #bf5af2);
+  color: #fff; border: none; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif;
+  cursor: pointer; transition: all .2s; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.ai-btn:hover { opacity: .9; transform: scale(.99); }
+.ai-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.ai-result {
+  margin-top: 14px; background: var(--bg); border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); padding: 16px; display: none;
+}
+.ai-result.show { display: block; }
+.ai-result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.ai-result-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.ai-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.ai-chip {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 5px 10px; font-size: 12px; color: var(--text2);
+  display: flex; align-items: center; gap: 5px;
+}
+.ai-chip strong { color: var(--text); }
+.ai-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.ai-action-btn {
+  padding: 8px 14px; border-radius: 8px; border: 1.5px solid var(--border2);
+  background: var(--surface); color: var(--text); font-size: 12px; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.ai-action-btn:hover { border-color: var(--blue); color: var(--blue); }
+.ai-action-btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.ai-action-btn.primary:hover { background: var(--blue2); border-color: var(--blue2); color: #fff; }
+.ai-action-btn.lbc { background: var(--lbc); color: #fff; border-color: var(--lbc); }
+.ai-action-btn.lbc:hover { opacity: .88; color: #fff; }
+.ai-thinking { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); padding: 10px 0; }
+.ai-spinner { width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: #5e5ce6; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-analysis-text { font-size: 12px; color: var(--text2); line-height: 1.7; background: var(--surface); border-radius: 8px; padding: 10px 12px; margin-top: 8px; border: 1px solid var(--border); white-space: pre-wrap; }
+.lbc-preview { margin-top: 10px; background: rgba(255,107,0,.06); border: 1.5px solid rgba(255,107,0,.2); border-radius: 8px; padding: 10px 12px; }
+.lbc-preview-title { font-size: 11px; font-weight: 600; color: var(--lbc); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.lbc-link { font-size: 12px; color: var(--blue); word-break: break-all; }
+
 /* ── TOAST ── */
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -400,7 +475,18 @@ header {
 
     <div class="divider"></div>
     <button class="cta-btn" onclick="showScreen('comp')">Voir le comparatif →</button>
-    <button class="ghost-btn" onclick="clearAll()">Effacer toutes les annonces</button>
+    <button class="ghost-btn" onclick="clearAll()">Effacer les annonces</button>
+
+    <div class="divider" style="margin-top:16px"></div>
+
+    <div class="sb-group" style="margin-top:4px">
+      <div class="sb-group-title">Études comparatives</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <input type="text" id="session-name" placeholder="Nom de l'étude…" style="flex:1;background:var(--bg3);border:1.5px solid transparent;border-radius:var(--radius-sm);padding:7px 10px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none">
+        <button onclick="newSession(document.getElementById('session-name').value.trim());document.getElementById('session-name').value=''" style="background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">+ Nouvelle</button>
+      </div>
+      <div id="sessions-list"></div>
+    </div>
 
   </aside>
 
@@ -413,6 +499,39 @@ header {
         <h2 style="font-size:22px;font-weight:700;letter-spacing:-0.4px">Ajouter des annonces</h2>
         <p style="font-size:13px;color:var(--text2);margin-top:4px">Colle le texte copié depuis chaque site, ou remplis le formulaire manuellement.</p>
       </div>
+      <!-- PANNEAU ANALYSE IA -->
+      <div class="ai-panel">
+        <div class="ai-panel-header">
+          <span class="ai-badge">✦ IA</span>
+          <span class="ai-desc">Colle le texte d'une annonce Encar ou Karaba — Claude extrait les infos et génère la recherche LeBonCoin</span>
+        </div>
+        <div class="ai-input-wrap">
+          <textarea class="ai-textarea" id="ai-input" placeholder="Colle ici le texte complet de l'annonce (depuis Encar ou Karaba)&#10;&#10;• Sélectionne tout le texte visible de la page annonce&#10;• Ctrl+C → colle ici&#10;• Claude va extraire : modèle, année, kilométrage, motorisation, prix, équipements&#10;• Une recherche LeBonCoin sera générée automatiquement" rows="5"></textarea>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <select id="ai-source" style="background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none">
+              <option value="karaba">Karaba</option>
+              <option value="encar">Encar</option>
+            </select>
+            <button class="ai-btn" id="ai-btn" onclick="analyseIA()">
+              <span id="ai-btn-icon">✦</span> Analyser
+            </button>
+          </div>
+        </div>
+        <div class="ai-result" id="ai-result">
+          <div class="ai-result-header">
+            <div class="ai-result-title" id="ai-result-title">Analyse du véhicule</div>
+            <span style="font-size:11px;color:var(--text3)" id="ai-result-src"></span>
+          </div>
+          <div class="ai-chips" id="ai-chips"></div>
+          <div class="ai-analysis-text" id="ai-analysis"></div>
+          <div class="lbc-preview" id="lbc-preview">
+            <div class="lbc-preview-title">🔍 Recherche LeBonCoin générée</div>
+            <a class="lbc-link" id="lbc-link" target="_blank" href="#"></a>
+          </div>
+          <div class="ai-actions" id="ai-actions"></div>
+        </div>
+      </div>
+
       <div class="sources-grid">
 
         <!-- KARABA -->
@@ -522,10 +641,216 @@ header {
 // STATE
 // ══════════════════════════════════════
 let listings = [], krwRate = 0.00068, srcFilter = 'all', uid = 0;
+let currentSession = null;
+
+// ══════════════════════════════════════
+// LOCALSTORAGE — SESSIONS
+// ══════════════════════════════════════
+function saveSessions() {
+  const sessions = getSessions();
+  if(currentSession) {
+    const idx = sessions.findIndex(s => s.id === currentSession.id);
+    const updated = { ...currentSession, listings, updatedAt: Date.now() };
+    if(idx >= 0) sessions[idx] = updated;
+    else sessions.push(updated);
+    currentSession = updated;
+  }
+  localStorage.setItem('autoimport_sessions', JSON.stringify(sessions));
+  renderSessionsList();
+}
+
+function getSessions() {
+  try { return JSON.parse(localStorage.getItem('autoimport_sessions')) || []; }
+  catch { return []; }
+}
+
+function newSession(name) {
+  const s = { id: Date.now(), name: name||('Étude '+new Date().toLocaleDateString('fr-FR')), listings: [], createdAt: Date.now(), updatedAt: Date.now() };
+  currentSession = s;
+  listings = [];
+  uid = 0;
+  updateBadge();
+  saveSessions();
+  renderComp();
+  toast('Nouvelle étude créée : ' + s.name);
+}
+
+function loadSession(id) {
+  const sessions = getSessions();
+  const s = sessions.find(x => x.id === id);
+  if(!s) return;
+  currentSession = s;
+  listings = s.listings || [];
+  uid = listings.length ? Math.max(...listings.map(l=>l.id)) : 0;
+  updateBadge();
+  renderComp();
+  showScreen('comp');
+  toast('Étude chargée : ' + s.name);
+}
+
+function deleteSession(id) {
+  if(!confirm('Supprimer cette étude ?')) return;
+  let sessions = getSessions();
+  sessions = sessions.filter(s => s.id !== id);
+  localStorage.setItem('autoimport_sessions', JSON.stringify(sessions));
+  if(currentSession && currentSession.id === id) { currentSession = null; listings = []; updateBadge(); renderComp(); }
+  renderSessionsList();
+  toast('Étude supprimée');
+}
+
+function renderSessionsList() {
+  const el = document.getElementById('sessions-list');
+  if(!el) return;
+  const sessions = getSessions().sort((a,b) => b.updatedAt - a.updatedAt);
+  if(!sessions.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 4px">Aucune étude sauvegardée</div>';
+    return;
+  }
+  el.innerHTML = sessions.map(s => `
+    <div class="session-item ${currentSession && currentSession.id===s.id?'active':''}" onclick="loadSession(${s.id})">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">${(s.listings||[]).length} annonce${(s.listings||[]).length>1?'s':''} · ${new Date(s.updatedAt).toLocaleDateString('fr-FR')}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteSession(${s.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 0 0 8px;flex-shrink:0" title="Supprimer">✕</button>
+    </div>`).join('');
+}
 
 // ══════════════════════════════════════
 // RATE
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+// ANALYSE IA
+// ══════════════════════════════════════
+let lastAnalysed = null;
+
+async function analyseIA() {
+  const text = document.getElementById('ai-input').value.trim();
+  const source = document.getElementById('ai-source').value;
+  if(!text || text.length < 20) { toast('Colle d'abord le texte de l'annonce'); return; }
+
+  const btn = document.getElementById('ai-btn');
+  const icon = document.getElementById('ai-btn-icon');
+  btn.disabled = true;
+  icon.innerHTML = '<span class="ai-spinner" style="display:inline-block"></span>';
+  btn.childNodes[1].textContent = ' Analyse en cours…';
+
+  const result = document.getElementById('ai-result');
+  result.classList.remove('show');
+
+  const prompt = `Tu es un expert en import de véhicules coréens. Analyse cette annonce de voiture provenant du site ${source === 'karaba' ? 'Karaba (karaba.com)' : 'Encar (encar.com)'} et extrais les informations structurées.
+
+Texte de l'annonce :
+${text}
+
+Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown, pas de backticks) :
+{
+  "modele": "marque et modèle complet en français si possible",
+  "annee": 2022,
+  "km": 45000,
+  "motorisation": "ex: 3.5 T-GDI V6 Essence",
+  "carburant": "Essence|Diesel|Hybride|Électrique|LPG",
+  "transmission": "Automatique|Manuelle",
+  "couleur": "couleur si mentionnée",
+  "prix_krw": 45000000,
+  "prix_eur_estime": 28000,
+  "equipements": ["liste", "des", "équipements", "clés"],
+  "points_attention": ["points à vérifier ou défauts mentionnés"],
+  "resume": "Résumé en 2 phrases de l'annonce et de l'état du véhicule",
+  "lbc_recherche": "termes de recherche optimisés pour LeBonCoin ex: Genesis G80 3.5"
+}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '';
+    // Parser JSON — enlever éventuels backticks
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const car = JSON.parse(clean);
+    lastAnalysed = { ...car, source };
+    renderAnalyse(car, source);
+  } catch(e) {
+    toast('Erreur d'analyse — vérifie le texte collé');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    icon.textContent = '✦';
+    btn.childNodes[1].textContent = ' Analyser';
+  }
+}
+
+function renderAnalyse(car, source) {
+  // Title
+  document.getElementById('ai-result-title').textContent = car.modele || 'Véhicule analysé';
+  document.getElementById('ai-result-src').textContent = source === 'karaba' ? 'Source : Karaba' : 'Source : Encar';
+
+  // Chips
+  const chips = [
+    car.annee       ? `📅 <strong>${car.annee}</strong>` : null,
+    car.km          ? `📏 <strong>${car.km.toLocaleString('fr-FR')} km</strong>` : null,
+    car.carburant   ? `⛽ <strong>${car.carburant}</strong>` : null,
+    car.motorisation? `🔧 <strong>${car.motorisation}</strong>` : null,
+    car.transmission? `⚙️ <strong>${car.transmission}</strong>` : null,
+    car.couleur     ? `🎨 <strong>${car.couleur}</strong>` : null,
+    car.prix_krw    ? `₩ <strong>${(car.prix_krw/1e6).toFixed(1)}M</strong>` : null,
+    car.prix_eur_estime ? `≈ <strong>${car.prix_eur_estime.toLocaleString('fr-FR')} €</strong> brut` : null,
+  ].filter(Boolean);
+  document.getElementById('ai-chips').innerHTML = chips.map(c => `<div class="ai-chip">${c}</div>`).join('');
+
+  // Résumé + équipements + points attention
+  let txt = '';
+  if(car.resume) txt += car.resume + '\n\n';
+  if(car.equipements?.length) txt += '✅ Équipements : ' + car.equipements.join(', ') + '\n';
+  if(car.points_attention?.length) txt += '\n⚠️ Points d\'attention : ' + car.points_attention.join(' · ');
+  document.getElementById('ai-analysis').textContent = txt;
+
+  // LBC link
+  const lbcTerms = car.lbc_recherche || car.modele || '';
+  const yearMin = car.annee ? car.annee - 1 : '';
+  const yearMax = car.annee ? car.annee + 1 : '';
+  const kmMax = car.km ? Math.round(car.km * 1.25 / 10000) * 10000 : '';
+  const lbcQ = encodeURIComponent(lbcTerms);
+  const lbcUrl = `https://www.leboncoin.fr/recherche?category=2&text=${lbcQ}${yearMin?'&regdate='+yearMin+'-'+yearMax:''}${kmMax?'&mileage=0-'+kmMax:''}`;
+  const lbcEl = document.getElementById('lbc-link');
+  lbcEl.href = lbcUrl;
+  lbcEl.textContent = lbcUrl.length > 80 ? lbcUrl.substring(0,80)+'…' : lbcUrl;
+
+  // Actions
+  document.getElementById('ai-actions').innerHTML = `
+    <button class="ai-action-btn lbc" onclick="window.open('${lbcUrl}','_blank')">🔍 Ouvrir LeBonCoin</button>
+    <button class="ai-action-btn primary" onclick="addFromIA()">+ Ajouter au comparatif</button>
+    <button class="ai-action-btn" onclick="document.getElementById('ai-input').value='';document.getElementById('ai-result').classList.remove('show')">✕ Effacer</button>`;
+
+  document.getElementById('ai-result').classList.add('show');
+}
+
+function addFromIA() {
+  if(!lastAnalysed) return;
+  const c = lastAnalysed;
+  listings.push({
+    id: ++uid,
+    source: c.source || 'karaba',
+    model: c.modele || 'Véhicule',
+    year: c.annee || null,
+    km: c.km || null,
+    fuel: c.carburant || 'Essence',
+    prixKrw: c.prix_krw || 0,
+    prixEur: 0,
+  });
+  updateBadge();
+  toast('Véhicule ajouté au comparatif');
+  showScreen('comp');
+  renderComp();
+}
+
 async function fetchRate() {
   try {
     const r = await fetch('https://api.frankfurter.app/latest?from=KRW&to=EUR');
@@ -538,6 +863,17 @@ async function fetchRate() {
   }
 }
 fetchRate();
+// Charger la dernière session au démarrage
+(function(){
+  const sessions = getSessions().sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(sessions.length) {
+    currentSession = sessions[0];
+    listings = currentSession.listings || [];
+    uid = listings.length ? Math.max(...listings.map(l=>l.id)) : 0;
+  }
+  renderSessionsList();
+  updateBadge();
+})();
 
 // ══════════════════════════════════════
 // NAV
@@ -661,6 +997,7 @@ function addManual(src) {
 
 function updateBadge() {
   document.getElementById('count-badge').textContent = listings.length;
+  if(currentSession) saveSessions();
 }
 
 // ══════════════════════════════════════
