@@ -414,7 +414,7 @@ const db = getFirestore(app);
 
 // ── GEMINI CONFIG ──
 const GEMINI_KEY = 'AQ.Ab8RN6KL5aaRvORnn4vUgQutp3INvq7-GDuyQABJ7jITxNnLlA';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + GEMINI_KEY;
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' + GEMINI_KEY;
 
 // ── FIRESTORE SESSIONS ──
 window.fbSaveSession = async function(session) {
@@ -478,8 +478,7 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 1500,
-        responseMimeType: 'application/json'
+        maxOutputTokens: 1500
       }
     })
   });
