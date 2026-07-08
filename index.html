@@ -491,7 +491,7 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown,
   }
 
   const data = await resp.json();
-  console.log('Gemini response:', data);
+  console.log('Gemini raw response:', JSON.stringify(data).substring(0, 300));
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   const clean = raw.replace(/```json[\s\S]*?```|```[\s\S]*?```/g, m => m.replace(/```json|```/g,'')).trim();
   try {
@@ -651,8 +651,8 @@ console.log('Firebase + Gemini initialisés');
               <option value="encar">Encar</option>
               <option value="karaba">Karaba</option>
             </select>
-            <button class="ai-btn" id="ai-btn" onclick="analyseIA()">
-              <span id="ai-btn-icon">✦</span> Analyser
+            <button class="ai-btn" id="ai-btn" onclick="analyseIA()" style="margin-top:0">
+              <span id="ai-btn-icon">✦</span><span id="ai-btn-txt"> Analyser</span>
             </button>
           </div>
         </div>
@@ -932,7 +932,7 @@ async function analyseIA() {
   const icon = document.getElementById('ai-btn-icon');
   btn.disabled = true;
   icon.innerHTML = '<span class="ai-spinner" style="display:inline-block"></span>';
-  btn.childNodes[1].textContent = ' Analyse en cours…';
+  const t2=document.getElementById('ai-btn-txt');if(t2)t2.textContent=' Analyse en cours…';
 
   const result = document.getElementById('ai-result');
   result.classList.remove('show');
@@ -966,7 +966,7 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown,
       toast("⚠️ Firebase non chargé — recharge la page");
       btn.disabled = false;
       icon.textContent = '✦';
-      btn.childNodes[1].textContent = ' Analyser';
+      const t=document.getElementById('ai-btn-txt');if(t)t.textContent=' Analyser';
       return;
     }
     const car = await window.geminiAnalyse(text, source);
@@ -978,7 +978,7 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown,
   } finally {
     btn.disabled = false;
     icon.textContent = '✦';
-    btn.childNodes[1].textContent = ' Analyser';
+    const t=document.getElementById('ai-btn-txt');if(t)t.textContent=' Analyser';
   }
 }
 
@@ -1048,13 +1048,23 @@ function addFromIA() {
 
 async function fetchRate() {
   try {
-    const r = await fetch('https://api.frankfurter.app/latest?from=KRW&to=EUR');
+    // API sans CORS
+    const r = await fetch('https://open.er-api.com/v6/latest/KRW');
     const d = await r.json();
-    krwRate = d.rates.EUR;
+    krwRate = d.rates?.EUR || 0.00068;
     document.getElementById('rate-val').textContent = krwRate.toFixed(6);
     renderComp();
   } catch {
-    document.getElementById('rate-val').textContent = krwRate.toFixed(6);
+    try {
+      // Fallback 2
+      const r2 = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/krw.json');
+      const d2 = await r2.json();
+      krwRate = d2.krw?.eur || 0.00068;
+      document.getElementById('rate-val').textContent = krwRate.toFixed(6);
+      renderComp();
+    } catch {
+      document.getElementById('rate-val').textContent = krwRate.toFixed(6) + ' (défaut)';
+    }
   }
 }
 fetchRate();
