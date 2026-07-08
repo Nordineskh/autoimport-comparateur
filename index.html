@@ -861,7 +861,7 @@ let lastAnalysed = null;
 // ── ANALYSE PAR URL ──
 async function analyseURL() {
   const url = document.getElementById('ai-url').value.trim();
-  if(!url) { toast('Colle d'abord un lien Encar ou Karaba'); return; }
+  if(!url) { toast("Colle d'abord un lien Encar ou Karaba"); return; }
 
   const btn = document.getElementById('ai-url-btn');
   const icon = document.getElementById('ai-url-icon');
@@ -916,7 +916,7 @@ async function analyseURL() {
     document.getElementById('ai-url').value = '';
 
   } catch(e) {
-    toast('Erreur lors de l'analyse du lien');
+    toast("Erreur lors de l'analyse du lien");
     btn.disabled = false;
     icon.textContent = '✦';
     console.error(e);
@@ -926,7 +926,7 @@ async function analyseURL() {
 async function analyseIA() {
   const text = document.getElementById('ai-input').value.trim();
   const source = document.getElementById('ai-source').value;
-  if(!text || text.length < 20) { toast('Colle d'abord le texte de l'annonce'); return; }
+  if(!text || text.length < 20) { toast("Colle d'abord le texte de l'annonce"); return; }
 
   const btn = document.getElementById('ai-btn');
   const icon = document.getElementById('ai-btn-icon');
@@ -963,7 +963,7 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte (pas de markdown,
 
   try {
     if(!window.geminiAnalyse) {
-      toast('⚠️ Firebase non chargé — recharge la page');
+      toast("⚠️ Firebase non chargé — recharge la page");
       btn.disabled = false;
       icon.textContent = '✦';
       btn.childNodes[1].textContent = ' Analyser';
